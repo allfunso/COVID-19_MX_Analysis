@@ -1,0 +1,338 @@
+---
+title: "4B"
+output: word_document
+date: '2022-10-12'
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+Héctor David Bahena Garza \| A01284661
+
+Andres Tarango Hdz \| A01783336
+
+Gonzalo Garza Moreno \| A01284950
+
+Alfonso Castro Camino \| A01733148
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+M = read.csv("muestra120k_Gr2.csv", encoding = "UTF-8")
+conf = 0.95
+alfa = 1 - conf
+```
+
+## SUBSETS DE PERIODOS
+
+```{r}
+S1 = subset(M, as.Date(M$FECHA_INGRESO) > as.Date("2020-06-01") & as.Date(M$FECHA_INGRESO) < as.Date("2021-01-01"))
+S2 = subset(M, as.Date(M$FECHA_INGRESO) > as.Date("2021-01-01") & as.Date(M$FECHA_INGRESO) < as.Date("2021-06-01"))
+S3 = subset(M, as.Date(M$FECHA_INGRESO) > as.Date("2021-06-01") & as.Date(M$FECHA_INGRESO) < as.Date("2022-01-01"))
+s1_casos = as.double(dim(S1)[1])
+s2_casos = as.double(dim(S2)[1])
+s3_casos = as.double(dim(S3)[1])
+```
+
+# UNA POBLACIÓN
+
+## EDADES
+
+### INTERVALOS DE CONFIANZA
+
+```{r}
+library(BSDA)
+e1 = S1$EDAD 
+z.test(e1, conf.level = conf, sigma.x = sd(e1)) # Intervalo de confianza para promedio de edad en el primer periodo (Se usa la distribución normal Z porque se trata de la media de una muestra grande (TCL)):
+
+e2 = S2$EDAD
+z.test(e2, conf.level = conf, sigma.x = sd(e2)) # Intervalo de confianza para promedio de edad en el segundo periodo (Se usa la distribución normal Z porque se trata de la media de una muestra grande (TCL)):
+
+e3 = S3$EDAD
+z.test(e3, conf.level = conf, sigma.x = sd(e3)) # Intervalo de confianza para promedio de edad en el segundo periodo (Se usa la distribución normal Z porque se trata de la media de una muestra grande (TCL)):
+```
+
+Con esto se puede ver que ambas muestras tienen casi la misma media de edad y podemos decir que la muestras tomadas no deberían de dar resultados diferentes con respecto a esta variable.
+
+```{r}
+par(mfrow=c(3, 1))
+barplot(table(e1), col=topo.colors(100), ylim=c(0, 650))
+barplot(table(e2), col=topo.colors(100), ylim=c(0, 650))
+barplot(table(e3), col=topo.colors(100), ylim=c(0, 650))
+```
+
+
+## TASAS DE MUERTES
+
+### PRUEBA DE HIPÓTESIS
+
+H_0: La tasa de muertes en el primer periodo \> 0.1
+
+H_1: La tasa de muertes en el primer periodo \< 0.1
+
+$\alpha = 0.05$
+
+Regla de decisión: Se rechaza H_0 si el valor-p \< alpha = 0.05
+
+```{r}
+T1 = table(S1$FECHA_DEF)
+T2 = table(S2$FECHA_DEF)
+T3 = table(S3$FECHA_DEF)
+s1_muertes = s1_casos - as.double(T1["9999-99-99"])
+s2_muertes = s2_casos - as.double(T2["9999-99-99"])
+s3_muertes = s3_casos - as.double(T3["9999-99-99"])
+
+Z = ((s1_muertes/s1_casos)-(0.1))/sqrt((0.1*(1-0.1))/s1_casos)
+cat("valor-p:",pnorm(Z))
+```
+
+valor-p = 1.284939e-05 \< alfa 0.05: Se rechaza H_0.
+
+Se concluye que hay evidencia para demostrar que la tasa de muerte poblacional en el primer periodo es menor al 0.1.
+
+### INTERVALOS DE CONFIANZA
+
+```{r}
+prop.test(s1_muertes, s1_casos, conf.level = conf, correct = FALSE) # Intervalo de confianza para tasa de muerte en el primer periodo (Aquí se trata de una proporción (muertes/total de casos), por lo que se usa el test de proporción)
+
+prop.test(s2_muertes, s2_casos, conf.level = conf, correct = FALSE) # Intervalo de confianza para tasa de muerte en el segundo periodo (Nuevamente se usa el test de proporción, pero para el segundo periodo)
+
+prop.test(s3_muertes, s3_casos, conf.level = conf, correct = FALSE) # Intervalo de confianza para tasa de muerte en el tercer periodo (Nuevamente se usa el test de proporción, pero para el tercer periodo)
+```
+
+## TASA DE HOSPITALIZACIÓN
+
+### PRUEBA DE HIPÓTESIS
+
+H_0: La tasa de hospitalización en el primer periodo \> 0.2
+
+H_1: La tasa de hospitalización en el primer periodo \< 0.2
+
+$\alpha = 0.05$
+
+Regla de decisión: Se rechaza H_0 si el valor-p \< alpha = 0.05
+
+```{r}
+T1H = table(S1$TIPO_PACIENTE)
+T2H = table(S2$TIPO_PACIENTE)
+T3H = table(S3$TIPO_PACIENTE)
+s1_hosps = as.double(T1H["2"])
+s2_hosps = as.double(T2H["2"])
+s3_hosps = as.double(T3H["2"])
+
+Z = ((s1_hosps/s1_casos)-(0.2))/sqrt((0.2*(1-0.2))/s1_casos)
+cat("valor-p:",pnorm(Z))
+```
+
+valor-p = 8.415387e-07 \< alfa 0.05: Se rechaza H_0.
+
+Se concluye que hay evidencia para demostrar que la tasa de hospitalización poblacional en el primer periodo es menor al 0.2.
+
+### INTERVALOS DE CONFIANZA
+
+```{r}
+prop.test(s1_hosps, s1_casos, conf.level = conf, correct = FALSE)  # Intervalo de confianza para tasa de hospitalización en el primer periodo (Ahora se trabaja con una nueva proporción (hospitalización/total de casos). Como es una razón, se usa el test de proporción):
+prop.test(s2_hosps, s2_casos, conf.level = conf, correct = FALSE)  # # Intervalo de confianza para tasa de hospitalización en el segundo periodo (Se vuelve a usar el test de proporción para la razón hospitalización por total de casos pero en el segundo periodo.):
+prop.test(s3_hosps, s3_casos, conf.level = conf, correct = FALSE)  # # Intervalo de confianza para tasa de hospitalización en el segundo periodo (Se vuelve a usar el test de proporción para la razón hospitalización por total de casos pero en el segundo periodo.):
+```
+
+## Pie Charts
+```{r}
+# S1
+par(mfrow=c(1, 2))
+pie(c(s1_casos-s1_hosps, s1_hosps), c("Ambulatorio", "Hospitalizados"), col=c(3, "red"))
+pie(c(s1_casos-s1_muertes, s1_muertes), c("Recuperados", "Muertes"), col=c(4, "gray2"))
+
+# S2
+par(mfrow=c(1, 2))
+pie(c(s2_casos-s2_hosps, s2_hosps), c("Ambulatorio", "Hospitalizados"), col=c(3, "red"))
+pie(c(s2_casos-s2_muertes, s2_muertes), c("Recuperados", "Muertes"), col=c(4, "gray2"))
+
+# S3
+par(mfrow=c(1, 2))
+pie(c(s3_casos-s3_hosps, s3_hosps), c("Ambulatorio", "Hospitalizados"), col=c(3, "red"))
+pie(c(s3_casos-s3_muertes, s3_muertes), c("Recuperados", "Muertes"), col=c(4, "gray2"))
+```
+
+
+# DOS POBLACIONES
+
+## DIFERENCIA EDADES (PRIMER PERIODO - SEGUNDO PERIODO)
+
+H_0: e1 = e2: No existe una diferencia entre el promedio de edad en los diferentes periodos.
+
+H_1: e1 =/= e2: Sí existe una diferencia
+
+$\alpha = 0.05$
+
+Regla de decisión: Se rechaza H_0 si el valor-p \< alpha = 0.05
+
+```{r}
+library(BSDA)
+z.test(e1,e2, conf.level = conf, sigma.x = sd(e1), sigma.y = sd(e2)) # Diferencia de edades (Primer periodo - Segundo periodo):
+```
+
+Se desea obtener un intervalo de confianza para la diferencia de medias.
+
+Como son muestras grandes, se usa la distribución normal Z (TCL).
+
+El cero no está dentro del intervalo de confianza, por lo que se infiere que sí existe una diferencia.
+
+valor-p = 0.00042 \< alfa 0.05: Se rechaza H_0.
+
+Se concluye que hay evidencia para demostrar que el promedio de edad a nivel nacional de aquellos reportados como casos positivos de COVID-19 disminiuyó.
+
+## DIFERENCIA TASAS DE MUERTES (PRIMER PERIODO - SEGUNDO PERIODO)
+
+H_0: tasa de muerte en periodo 1 = tasa de muerte en periodo 2: No existe una diferencia entre la tasa de muerte en los diferentes periodos.
+
+H_1: tasa de muerte en periodo 1 =/= tasa de muerte en periodo 2: Sí existe una diferencia.
+
+$\alpha = 0.05$
+
+Regla de decisión: Se rechaza H_0 si el valor-p \< alpha = 0.05
+
+```{r}
+prop.test(c(s1_muertes,s2_muertes),c(s1_casos,s2_casos), conf.level = conf, correct = FALSE) # Diferencia de tasas de muertes (Primer periodo - Segundo periodo):
+```
+
+La diferencia de proporciones también se distribuye como una normal cuando la muestra es lo suficientemente grande, tal que la desviación estándar es la raíz cuadrada de la suma de los estimadores de proporción por su complemento entre n.
+
+R hace este proceso automáticamente.
+
+El cero no está dentro del intervalo de confianza, por lo que se infiere que sí existe una diferencia.
+
+valor-p = 0.01576 \< alfa = 0.05: Se rechaza H_0.
+
+Se concluye que hay evidencia para demostrar que la tasa de mortalidad por COVID-19 disminuyó.
+
+## DIFERENCIA TASAS DE HOSPITALIZACIÓN (PRIMER PERIODO - SEGUNDO PERIODO)
+
+H_0: tasa de hospitalización en periodo 1 = tasa de hospitalización en periodo 2: No existe una diferencia entre la tasa de hospitalización en los diferentes periodos.
+
+H_1: tasa de hospitaliazción en periodo 1 =/= tasa de hospitalización en periodo 2: Sí existe una diferencia.
+
+$\alpha = 0.05$
+
+Regla de decisión: Se rechaza H_0 si el valor-p \< alpha = 0.05
+
+```{r}
+prop.test(c(s1_hosps,s2_hosps),c(s1_casos,s2_casos), conf.level = conf, correct = FALSE) # Diferencia de tasas de hospitalización (Primer periodo - Segundo periodo):
+```
+
+El mismo proceso se aplicó para la diferencia de proporciones, pero ahora con la variable de hospitalizaciones.
+
+El cero no está dentro del intervalo de confianza, por lo que se infiere que sí existe una diferencia.
+
+valor-p = 1.633e-08 \< alfa = 0.05: Se rechaza H_0.
+
+Se concluye que hay evidencia para demostrar que la tasa de hospitalización por COVID-19 disminuyó.
+
+## DIFERENCIA TASAS DE MUERTES EN DOS ESTADOS DE LA REPÚBLICA (NUEVO LEÓN - PUEBLA)
+
+H_0: tasa de muerte en Nuevo León = tasa de muerte en Puebla: No existe una diferencia entre la tasa de muerte de Nuevo León y Puebla.
+
+H_1: tasa de muerte en Nuevo León =/= tasa de muerte en Puebla: Sí existe una diferencia.
+
+$\alpha = 0.05$
+
+Regla de decisión: Se rechaza H_0 si el valor-p \< alpha = 0.05
+
+```{r}
+NL = subset(M, M$ENTIDAD_NAC == 19)
+PU = subset(M, M$ENTIDAD_NAC == 21)
+NL_casos = as.double(dim(NL)[1])
+PU_casos = as.double(dim(PU)[1])
+TNL = table(NL$FECHA_DEF)
+TPU = table(PU$FECHA_DEF)
+NL_muertes = NL_casos - as.double(TNL["9999-99-99"])
+PU_muertes = PU_casos - as.double(TPU["9999-99-99"])
+f1 = s1_muertes
+f2 = s2_muertes
+n1 = s1_casos
+n2 = s2_casos
+
+prop.test(c(NL_muertes,PU_muertes),c(NL_casos,PU_casos), conf.level = conf, correct = FALSE) # Diferencia de tasa de muertes en diferentes entidades (Nuevo León - Puebla):
+```
+
+Por último, se obtuvo el intervalo de confianza para la diferencia de proporciones, regresando a la variable de muertes pero comparando dos entidades en lugar de los periodos de tiempo que se muestrearon originalmente.
+
+El cero no está dentro del intervalo de confianza, por lo que se infiere que sí existe una diferencia.
+
+valor-p = 2.2e-16 \< alfa = 0.05: Se rechaza H_0.
+
+Se concluye que hay evidencia para demostrar que la tasa de muertes en Puebla es mayor que la tasa de muertes en Nuevo León.
+
+# INDEPENDENCIA
+
+H_0: La obesidad y la hospitalización de un paciente son independientes.
+
+H_1: No son independientes.
+
+$\alpha = 0.05$
+
+```{r}
+cat("Obesidad\n")
+table(M$OBESIDAD)
+cat("\nTipo Paciente\n")
+table(M$TIPO_PACIENTE)
+```
+
+Nueva base de datos sin los 98
+```{r}
+M1 = subset(M, M$OBESIDAD != 98 & M$TIPO_PACIENTE != 98)
+cat("Obesidad\n")
+table(M1$OBESIDAD)
+cat("\nTipo Paciente\n")
+table(M1$TIPO_PACIENTE)
+```
+
+## Tabla bivariada
+```{r}
+Ta = table(M1$OBESIDAD, M1$TIPO_PACIENTE)
+colnames(Ta) = c("SÍ", "NO")
+rownames(Ta) = c("SÍ", "NO")
+
+Ta
+```
+
+```{r}
+Ra = chisq.test(Ta)
+Ra
+```
+
+Como el valor p = 0.0000 < 0.05 se rechaza H0. Por tanto hay evidencia para decir que no son independientes.
+
+
+## ANOVA
+```{r}
+anova = aov(lm(M$EDAD ~ as.Date(M$FECHA_INGRESO)))
+summary(anova)
+```
+Se realizó un ANOVA para la edad respecto a la fecha de ingreso. El valor-p que nos arrojó es mucho menor a alfa, por lo que se puede decir que la fecha de ingreso tiene una fuerte influencia en la edad de los pacientes. Esto soporta la diferencia de medias que se vio anteriormente entre los distintos periodos.
+
+### Verificación de supuestos
+```{r}
+library(nortest)
+# Normalidad de residuos
+hist(anova$residuals, density=30, col="blue4")
+qqnorm(anova$residuals, col="blue4", pch=21)
+qqline(anova$residuals, col="red2")
+ad.test(anova$residuals)
+
+# Homocedasticidad
+plot(anova$fitted.values, anova$residuals, col="blue4", pch=21)
+abline(h=0, col="red2")
+
+# Independencia de los errores
+plot(anova$residuals, col="green2", pch=21, type="l")
+```
+
+
+# CONCLUSIÓN
+
+Con base en los resultados obtenidos, se puede llegar a la conclusión que es probable que sí haya habido una mejoría en las tasas de hospitalización y de muertes, con una certeza del 95%.
+
+Esto se puede asociar a los esfuerzos mayores realizados por prevención y cuidados de los pacientes, o también en cambios en la manera en que se obtuvieron los datos en ese segundo periodo.
